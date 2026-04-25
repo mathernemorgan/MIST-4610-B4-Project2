@@ -1,9 +1,9 @@
-##**Team Members / Roles**
+## **Team Members / Roles**
 
 Hiya Shah (Data Wrangler), Morgan Matherne (Database Designer), Mark Monzer (Conceptual Modeler), Roshan Gadiraju (SQL Writer), Zeynep Koseoglu (Group Leader)
 
 
-##**Case Summary**
+## **Case Summary**
 
 Northline Outfitters is a small online retail company that sells student-focused lifestyle and technology accessories, including items such as hoodies, water bottles, desk lamps, phone cases, keyboards, mouse pads, and backpacks. The company purchases products from external vendors and sells them directly to customers across the United States and Canada. Because the business is still growing, its operational data has historically been stored in Excel spreadsheets rather than in a structured database system.
 
@@ -13,7 +13,7 @@ The objective of this project was to transform these raw spreadsheets into a cle
 
 The cleaned and structured database supports important business questions for Northline Outfitters, such as identifying top-selling products by country, evaluating employee performance in handling orders, and analyzing vendor-product relationships across categories. By converting the original spreadsheets into a relational model, the company gains a more reliable and scalable data foundation for decision-making, similar to what would be expected in a real-world business environment transitioning from spreadsheet-based operations to a database system.
 
-##**Conceptual Model / Database Description**
+## **Conceptual Model / Database Description**
 ## Data Model
 ![Project Image](mistproject2.png)
 
@@ -35,11 +35,11 @@ In terms of relationships, the most important business rules in the model are as
 
 Overall, this model is designed to be parsimonious but still expressive enough to support the retail case. It separates the original spreadsheets into distinct business entities, reduces redundancy, enforces clearer identifiers and relationships, and creates a structure that is suitable for both data quality improvement and SQL analysis. In that sense, the model follows the project guidance to keep the design compact, well-justified, and focused on useful business queries rather than over-engineering the schema.
 
-**Data Cleaning Process: Product_Supplier_Master**
+## **Data Cleaning Process: Product_Supplier_Master**
 
 The Product_Supplier_Master dataset contained multiple data quality issues, including inconsistent identifiers, mixed text and numeric formats, embedded currency labels, inconsistent units of measure, redundant helper columns, and unstructured notes. These issues were cleaned using SQL so the data could be standardized and loaded into the final relational model. The source spreadsheet included product, vendor, pricing, packaging, measurement, discontinuation, and parent SKU fields, so the cleaning process focused on making each of those attributes consistent and usable in the database.
 
-**The following SQL statements were used to clean the Product_Supplier_Master table, along with the justification for each step.**
+## **The following SQL statements were used to clean the Product_Supplier_Master table, along with the justification for each step.**
 
 -- SKU-related cleanup
 UPDATE Product_Supplier_Master
@@ -219,7 +219,7 @@ LEFT JOIN Product_Supplier_Master c
 WHERE p.parent_sku IS NOT NULL
   AND c.sku IS NULL;
 
-**Justification for Cleaning Steps**
+## **Justification for Cleaning Steps**
 
 SKU, alt_sku, and parent_sku were standardized by trimming whitespace, converting values to uppercase, and replacing blanks with NULL. This was necessary because SKU fields act as identifiers, and inconsistent formatting would create duplicate-looking products or broken parent-child relationships. The spreadsheet documentation makes clear that SKU is the internal product code and that parent_sku is used to link variants to a main product, so these fields had to be consistent for referential integrity.
 
@@ -253,7 +253,8 @@ Parent SKU validation was performed to confirm that every non-null parent_sku ma
 
 Overall, these cleaning steps transformed Product_Supplier_Master from a messy spreadsheet export into a structured dataset suitable for loading into normalized entities such as Product, Vendor, and Category. This directly supports the project requirement to identify major data quality issues, explain how they were resolved, and include SQL statements used to standardize, split, convert, or update the imported data.
 
-**Data Cleaning Process: Sales_Dump**
+
+## **Data Cleaning Process: Sales_Dump**
 
 1. Date Standardization
 Issue: Dates were stored as inconsistent strings (e.g., "10-11-2025" and "Oct 17 25"), preventing time-series analysis.
@@ -332,7 +333,7 @@ LEFT JOIN Customers c ON s.customer_email = c.email;
 Summary: Through these programmatic updates, the dataset was transformed from a low-integrity "flat" format into a clean, normalized structure ready for complex SQL joins and multi-dimensional reporting.
 
 
-**Queries**
+## **Queries**
 
 **1. Top Products by Revenue and Country**
 Natural Language Question: Which products generated the highest total sales revenue, by country?
