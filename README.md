@@ -1,4 +1,4 @@
-**Team Members/Roles**
+**Team Members / Roles**
 
 Hiya Shah (Data Wrangler), Morgan Matherne (Database Designer), Mark Monzer (Conceptual Modeler), Roshan Gadiraju (SQL Writer), Zeynep Koseoglu (Group Leader)
 
