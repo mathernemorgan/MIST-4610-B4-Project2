@@ -255,44 +255,78 @@ Overall, these cleaning steps transformed Product_Supplier_Master from a messy s
 
 **Data Cleaning Process: Sales_Dump**
 
-The Sales_Dump dataset contained numerous data quality issues, including inconsistent date formats, embedded text within structured fields, mixed currency representations, inconsistent identifiers, and unstructured notes. These issues were addressed using SQL transformations to convert the dataset into a clean, structured format suitable for relational database design and analysis. The following steps summarize the cleaning process and provide justification for each transformation.
+1. Date Standardization
+Issue: Dates were stored as inconsistent strings (e.g., "10-11-2025" and "Oct 17 25"), preventing time-series analysis.
+Solution: Used the STR_TO_DATE function to parse various string formats into the standard SQL DATE format (YYYY-MM-DD).
 
-Date Standardization
+SQL
+UPDATE Sales_Dump
+SET sale_date = CASE 
+    WHEN sale_date LIKE '%-%' THEN STR_TO_DATE(sale_date, '%m-%d-%Y')
+    WHEN sale_date LIKE '%Oct%' THEN '2025-10-17' -- Handled unique natural language cases
+    ELSE sale_date 
+END;
+2. Customer Attribute Decomposition
+Issue: The customer_info column contained three distinct data points—Name, Type, and Loyalty status—concatenated into a single string.
+Solution: Employed SUBSTRING_INDEX and TRIM to split the string into atomic columns, following the principle of Database Normalization.
 
-Sale dates were originally stored in multiple inconsistent formats (e.g., “10-11-2025”, “Oct 17 25”, “October 5 25”). These values were converted into a consistent SQL DATE format (YYYY-MM-DD) using STR_TO_DATE. This step was necessary to enable proper sorting, filtering, and time-based analysis, as inconsistent date formats cannot be reliably queried.
+SQL
+-- Extracting Name
+UPDATE Sales_Dump SET customer_name = TRIM(SUBSTRING_INDEX(customer_info, ',', 1));
 
-Customer Attribute Extraction
+-- Extracting Loyalty Member Status (Boolean Conversion)
+UPDATE Sales_Dump 
+SET is_loyalty_member = CASE 
+    WHEN customer_info LIKE '%Member%' THEN 1 
+    ELSE 0 
+END;
+3. Geographic & Null Remediation
+Issue: Missing data in shipping columns and placeholder text like "Same as billing" rendered regional reports inaccurate.
+Solution: Used UPDATE statements to map billing data to shipping fields where necessary and parsed combined city/region strings.
 
-The customer_info column contained multiple pieces of information in a single unstructured field, including customer name, customer type, and loyalty indicators. This field was decomposed into separate attributes such as customer_name, customer_type, and is_loyalty_member. This transformation improved normalization and allowed each attribute to be queried independently, eliminating redundancy and ambiguity.
+SQL
+UPDATE Sales_Dump 
+SET ship_city = TRIM(SUBSTRING_INDEX(location_string, ',', 1)),
+    ship_region = TRIM(SUBSTRING_INDEX(location_string, ',', -1))
+WHERE location_string IS NOT NULL;
+4. Financial & Numeric Conversion
+Issue: Unit prices and totals included currency symbols ($, %) and were stored as text, which blocked mathematical operations like SUM() and AVG().
+Solution: Stripped non-numeric symbols using REPLACE and cast the remaining strings to the DECIMAL data type.
 
-Geographic Parsing
+SQL
+UPDATE Sales_Dump 
+SET unit_price = CAST(REPLACE(unit_price, '$', '') AS DECIMAL(10,2)),
+    line_total = CAST(REPLACE(line_total, '$', '') AS DECIMAL(10,2));
+5. Referential Consistency (Normalization)
+Issue: Inconsistent casing (e.g., "visa" vs. "VISA" or "sku-1" vs. "SKU-1") would cause foreign key constraint violations.
+Solution: Applied UPPER and TRIM to all primary and foreign key columns to ensure perfect matching during table joins.
 
-Shipping information contained inconsistent entries such as “Same as billing” or combined values like “Toronto, ON.” These were parsed into structured attributes: ship_city, ship_region, and ship_country. This ensured geographic data could be used for grouping and analysis, particularly for required queries involving country-level sales comparisons.
+SQL
+UPDATE Sales_Dump 
+SET sku = UPPER(TRIM(sku)),
+    payment_method = UPPER(TRIM(payment_method));
+6. Feature Engineering (Boolean Flags)
+Issue: Operational insights (e.g., late shipments or gift orders) were buried in unstructured text within the notes column.
+Solution: Created new Boolean columns and used the LIKE operator to extract specific flags for advanced business intelligence.
 
-Currency and Financial Normalization
+SQL
+-- Identifying Late Shipments
+UPDATE Sales_Dump 
+SET is_late_ship = 1 
+WHERE notes LIKE '%late%';
 
-Price-related fields (unit_price, line_total, and discounts) contained embedded currency codes (USD, CAD), symbols ($), and percentage signs. These were cleaned by removing text and symbols and converting values into numeric DECIMAL format. Currency indicators were extracted and standardized separately where necessary. This step was critical to enable accurate financial calculations and comparisons.
+-- Flagging Manual Discounts for Audit
+UPDATE Sales_Dump 
+SET is_manual_discount = 1 
+WHERE notes LIKE '%promo%' OR notes LIKE '%discount%';
+7. Handling "Orphan" Records
+Issue: Sales records with missing customer emails or non-existent SKUs would fail to import into a strict relational schema.
+Solution: Identified these records and mapped them to a pre-defined "Unknown" placeholder in the parent tables to preserve transaction volume while maintaining integrity.
 
-SKU Standardization
+SQL
+-- Redirecting missing links to a Guest placeholder
+INSERT INTO Orders (customer_id, ...)
+SELECT IFNULL(c.customer_id, 9999), ...
+FROM Sales_Dump s
+LEFT JOIN Customers c ON s.customer_email = c.email;
 
-Product identifiers in the sku column were inconsistent in formatting (e.g., “sku-c-1002” vs. “SKU-C-1002”). These were standardized by trimming whitespace and converting values to uppercase. This ensured accurate joins with the Product Master dataset and maintained referential integrity across tables.
-
-Payment Method Cleaning
-
-Payment methods contained inconsistent casing and hidden formatting issues (e.g., “visa”, “VISA”, trailing spaces). These values were standardized by trimming whitespace and enforcing consistent capitalization. This prevented duplicate entries and ensured reliable grouping by payment type.
-
-Operational Text Mining (Notes Column)
-
-The notes column contained unstructured operational information. This text was analyzed to extract meaningful business flags and converted into Boolean attributes:
-
-is_late_ship: identifies orders requiring operational review
-is_gift: flags orders requiring gift receipts
-is_manual_discount: captures manually applied discounts or off-system adjustments
-
-This transformation converted unstructured text into structured, queryable fields.
-
-Referential Integrity Checks
-
-During the cleaning process, inconsistencies such as missing customer emails and SKUs not found in the Product Master were identified. Rather than discarding these records, placeholder values (e.g., “Unknown”) were used to preserve data completeness while maintaining referential integrity in the relational schema.
-
-**SQL Queries**
