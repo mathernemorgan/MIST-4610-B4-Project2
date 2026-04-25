@@ -330,4 +330,71 @@ SELECT IFNULL(c.customer_id, 9999), ...
 FROM Sales_Dump s
 LEFT JOIN Customers c ON s.customer_email = c.email;
 Summary: Through these programmatic updates, the dataset was transformed from a low-integrity "flat" format into a clean, normalized structure ready for complex SQL joins and multi-dimensional reporting.
+
+
+**Queries**
+1. Top Products by Revenue and Country
+Natural Language Question: Which products generated the highest total sales revenue, by country?
+
+SELECT ship_country, sku, product_description, SUM(line_total) AS total_revenue
+FROM Sales_Dump
+GROUP BY ship_country, sku, product_description
+ORDER BY ship_country, total_revenue DESC;
+
+
+2. ‎Employee Performance vs. Managerial Peer Average
+Natural Language Question: Which employees handled the largest number of orders, and how do their results compare with other employees under the same manager?
+
+SELECT employee_ref, manager_ref, COUNT(DISTINCT order_id) AS order_count,
+       AVG(COUNT(DISTINCT order_id)) OVER (PARTITION BY manager_ref) AS peer_avg_orders
+FROM Sales_Dump
+GROUP BY employee_ref, manager_ref
+ORDER BY order_count DESC;
+
+
+3. Multi-Category Vendors
+Natural Language Question: Which vendors supply products that appear in more than one category?
+
+SELECT vendor_name, COUNT(DISTINCT category) AS category_count
+FROM Product_Supplier_Master
+GROUP BY vendor_name
+HAVING COUNT(DISTINCT category) > 1;
+
+
+4. Student Demographic Sales Impact
+Natural Language Question: What is the total revenue and average line total for orders associated with "Student" customers?
+Business Justification: Since Northline focuses on student-friendly gear, this query quantifies the actual financial impact of the student demographic. If the average spend is lower than guests, management might implement "Student Bundle" deals to increase order value.
+
+SELECT COUNT(line_id) AS total_student_lines, 
+       SUM(line_total) AS total_student_revenue,
+       AVG(line_total) AS avg_student_line_value
+FROM Sales_Dump
+WHERE customer_info LIKE '%Student%';
+
+
+5. High-Risk Inventory Audit (Returns vs. Sales)
+Natural Language Question: Which products have a return rate higher than 10% and what is the total revenue lost from those returns?
+Business Justification: High return rates usually signal quality issues or misleading descriptions. By identifying these "High-Risk" items, the data wrangler can pinpoint specific vendors or products that are causing high processing costs and lost margins.
+
+SELECT sku, product_description,
+       (COUNT(CASE WHEN return_flag = 'Y' THEN 1 END) / COUNT(*)) * 100 AS return_rate,
+       SUM(CASE WHEN return_flag = 'Y' THEN line_total ELSE 0 END) AS revenue_lost
+FROM Sales_Dump
+GROUP BY sku, product_description
+HAVING return_rate > 10
+ORDER BY revenue_lost DESC;
+
+
+6. Monthly Sales Growth by Category
+Natural Language Question: What is the average discount given per category in the United States versus Canada?
+Business Justification: This identifies if one region is receiving significantly more discounts to move inventory. If Canadian orders have higher discounts, it may indicate a need to adjust base pricing in that country to maintain a healthy profit margin.
+
+SELECT ship_country, category, 
+       AVG(CASE 
+           WHEN discount LIKE '%%' THEN CAST(REPLACE(discount, '%', '') AS DECIMAL) / 100 
+           ELSE CAST(discount AS DECIMAL) 
+       END) AS avg_discount_value
+FROM Sales_Dump
+GROUP BY ship_country, category
+ORDER BY ship_country, avg_discount_value DESC;
     
