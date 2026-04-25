@@ -1,4 +1,4 @@
-### **Northline Outfitters — Project 2**
+## **Northline Outfitters — Project 2**
 Group B4 
 
 ## Table of Contents
