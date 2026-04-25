@@ -329,4 +329,5 @@ INSERT INTO Orders (customer_id, ...)
 SELECT IFNULL(c.customer_id, 9999), ...
 FROM Sales_Dump s
 LEFT JOIN Customers c ON s.customer_email = c.email;
-
+Summary: Through these programmatic updates, the dataset was transformed from a low-integrity "flat" format into a clean, normalized structure ready for complex SQL joins and multi-dimensional reporting.
+    
