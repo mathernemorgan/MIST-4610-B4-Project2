@@ -31,6 +31,10 @@ The cleaned and structured database supports important business questions for No
 
 ## Database Database Description
 
+Our database was designed to transform the two messy source spreadsheets, Sales_Dump and Product_Supplier_Master, into a compact relational model that supports data cleaning, structured storage, and the required SQL analysis. This matches the project goal of creating a conceptual model, implementing a database, and using that database to answer business questions. The assignment also emphasizes that a strong final model should remain relatively compact, with about 8 to 10 entities, and should clearly show entities, attributes, identifiers, and relationships.
+
+The model centers on the retail sales process for Northline Outfitters, a small online retailer that purchases products from outside vendors and sells them directly to customers in the United States and Canada. The database separates operational data into core business entities so that customer, employee, product, vendor, order, and payment information are not stored repeatedly in a single spreadsheet row. This reduces redundancy and makes the data easier to query and maintain. The design is intended to reflect the business case described in the project instructions, where sales records contain order-level and line-level information and product records contain vendor, category, and inventory-related details.
+
 | Entity | Type | Key Attributes | Relationships |
 |---|---|---|---|
 | **Orders** | Transactional | order_id (PK), sale_date, shipping_location, country | Belongs to 1 Customer; handled by 1 Employee; has many OrderLines; uses 1 PaymentMethod |
@@ -42,9 +46,8 @@ The cleaned and structured database supports important business questions for No
 | **Customer** | Reference | customer_id (PK), name, email, customer_type, notes, loyalty_info | Places many Orders |
 | **Employees** | Reference | employee_id (PK), manager_id (FK self-ref) | Handles many Orders; manager_id supports hierarchical reporting |
 | **PaymentMethods** | Lookup | payment_method_id (PK), payment_type | Used by many Orders |
-Our database was designed to transform the two messy source spreadsheets, Sales_Dump and Product_Supplier_Master, into a compact relational model that supports data cleaning, structured storage, and the required SQL analysis. This matches the project goal of creating a conceptual model, implementing a database, and using that database to answer business questions. The assignment also emphasizes that a strong final model should remain relatively compact, with about 8 to 10 entities, and should clearly show entities, attributes, identifiers, and relationships.
 
-The model centers on the retail sales process for Northline Outfitters, a small online retailer that purchases products from outside vendors and sells them directly to customers in the United States and Canada. The database separates operational data into core business entities so that customer, employee, product, vendor, order, and payment information are not stored repeatedly in a single spreadsheet row. This reduces redundancy and makes the data easier to query and maintain. The design is intended to reflect the business case described in the project instructions, where sales records contain order-level and line-level information and product records contain vendor, category, and inventory-related details.
+
 
 The main transactional entities in the model are Orders and OrderLines. The Orders table stores order-level information such as the order identifier, sale date, shipping location, customer, employee, payment method, and country. The OrderLines table stores the individual product lines associated with each order, including quantity, unit price, discount amount, tax amount, line total, return status, and any size or weight detail captured on the sales record. This separation is important because one order can contain multiple products, so storing everything in a single order table would create repeating groups and violate normalization principles. This structure also directly supports the project’s required revenue and sales-performance queries, which depend on line-level sales data and order-level shipping context.
 
@@ -65,7 +68,7 @@ Overall, this model is designed to be parsimonious but still expressive enough t
 The Product_Supplier_Master dataset contained multiple data quality issues, including inconsistent identifiers, mixed text and numeric formats, embedded currency labels, inconsistent units of measure, redundant helper columns, and unstructured notes. These issues were cleaned using SQL so the data could be standardized and loaded into the final relational model. The source spreadsheet included product, vendor, pricing, packaging, measurement, discontinuation, and parent SKU fields, so the cleaning process focused on making each of those attributes consistent and usable in the database.
 
 ## **The following SQL statements were used to clean the Product_Supplier_Master table, along with the justification for each step.**
-
+```sql
 -- SKU-related cleanup
 UPDATE Product_Supplier_Master
 SET sku = NULLIF(UPPER(TRIM(sku)), '');
@@ -243,6 +246,7 @@ LEFT JOIN Product_Supplier_Master c
     ON p.parent_sku = c.sku
 WHERE p.parent_sku IS NOT NULL
   AND c.sku IS NULL;
+```
 
 ## **Justification for Cleaning Steps**
 
