@@ -391,6 +391,7 @@ ORDER BY revenue_lost DESC;
 Natural Language Question: What is the average discount given per category in the United States versus Canada?
 Business Justification: This identifies if one region is receiving significantly more discounts to move inventory. If Canadian orders have higher discounts, it may indicate a need to adjust base pricing in that country to maintain a healthy profit margin.
 
+```sql
 SELECT ship_country, category, 
        AVG(CASE 
            WHEN discount LIKE '%%' THEN CAST(REPLACE(discount, '%', '') AS DECIMAL) / 100 
@@ -399,4 +400,5 @@ SELECT ship_country, category,
 FROM Sales_Dump
 GROUP BY ship_country, category
 ORDER BY ship_country, avg_discount_value DESC;
+```
     
