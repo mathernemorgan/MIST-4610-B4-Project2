@@ -1,3 +1,5 @@
+### Northline Outfitters — Project 2 
+
 ## Table of Contents
 
 1. [Team Members / Roles](#team-members--roles)
@@ -27,6 +29,19 @@ The cleaned and structured database supports important business questions for No
 ## Data Model
 ![Project Image](mistproject2.png)
 
+## Database Database Description
+
+| Entity | Type | Key Attributes | Relationships |
+|---|---|---|---|
+| **Orders** | Transactional | order_id (PK), sale_date, shipping_location, country | Belongs to 1 Customer; handled by 1 Employee; has many OrderLines; uses 1 PaymentMethod |
+| **OrderLines** | Transactional | line_id (PK), order_id (FK), sku (FK), quantity, unit_price, discount_amt, tax_amt, line_total, return_status, size, weight | Belongs to 1 Order; references 1 Product |
+| **Product** | Reference | sku (PK), alt_sku, parent_sku, description, list_price, discontinued, weight, length, reorder_level, pack_size, notes, category_id (FK) | Appears in many OrderLines; belongs to 1 Category; linked to Vendors via product_vendor |
+| **Categories** | Lookup | category_id (PK), category_name | Classifies many Products |
+| **Vendor** | Reference | vendor_id (PK), vendor_name, phone, vendor_rep | Linked to Products via product_vendor |
+| **product_vendor** | Bridge | sku (FK), vendor_id (FK), cost | Connects Products to Vendors; stores vendor-specific cost |
+| **Customer** | Reference | customer_id (PK), name, email, customer_type, notes, loyalty_info | Places many Orders |
+| **Employees** | Reference | employee_id (PK), manager_id (FK self-ref) | Handles many Orders; manager_id supports hierarchical reporting |
+| **PaymentMethods** | Lookup | payment_method_id (PK), payment_type | Used by many Orders |
 Our database was designed to transform the two messy source spreadsheets, Sales_Dump and Product_Supplier_Master, into a compact relational model that supports data cleaning, structured storage, and the required SQL analysis. This matches the project goal of creating a conceptual model, implementing a database, and using that database to answer business questions. The assignment also emphasizes that a strong final model should remain relatively compact, with about 8 to 10 entities, and should clearly show entities, attributes, identifiers, and relationships.
 
 The model centers on the retail sales process for Northline Outfitters, a small online retailer that purchases products from outside vendors and sells them directly to customers in the United States and Canada. The database separates operational data into core business entities so that customer, employee, product, vendor, order, and payment information are not stored repeatedly in a single spreadsheet row. This reduces redundancy and makes the data easier to query and maintain. The design is intended to reflect the business case described in the project instructions, where sales records contain order-level and line-level information and product records contain vendor, category, and inventory-related details.
