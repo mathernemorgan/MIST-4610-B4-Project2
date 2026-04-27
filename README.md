@@ -21,7 +21,7 @@ Hiya Shah (Data Wrangler), Morgan Matherne (Database Designer), Mark Monzer (Con
 
 ## **Case Summary**
 
-Northline Outfitters is a small online retail company that sells student-focused lifestyle and technology accessories, including items such as hoodies, water bottles, desk lamps, phone cases, keyboards, mouse pads, and backpacks. The company's data challenges are not just technical issues—they directly impact the company’s ability to operate and grow effectively. Because the Sales_Dump and Product_Supplier_Master datasets are messy, unstandardized, and inconsistent, the business struggles to generate reliable insights from its own data.
+Northline Outfitters is a small online retail company that sells student-focused lifestyle and technology accessories, including items such as hoodies, water bottles, desk lamps, phone cases, keyboards, mouse pads, and backpacks. The company's data challenges are not just technical issues, they directly impact the company’s ability to operate and grow effectively. Because the Sales_Dump and Product_Supplier_Master datasets are messy, unstandardized, and inconsistent, the business struggles to generate reliable insights from its own data.
 
 For example, inconsistent product names and duplicate entries make it difficult to accurately track inventory and sales performance, which can lead to overstocking or stockouts. Mixed date formats and unstructured transaction data limit the company’s ability to analyze trends over time, hurting forecasting and seasonal planning. Embedded currency values and inconsistent units (metric vs. imperial) introduce calculation errors, leading to inaccurate revenue reporting and flawed financial decisions.
 
