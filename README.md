@@ -464,6 +464,8 @@ GROUP BY sku, product_description
 HAVING return_rate > 10
 ORDER BY revenue_lost DESC;
 ```
+<img width="1435" height="724" alt="image" src="https://github.com/user-attachments/assets/32361390-7ed5-4cec-8c71-15c1faf27ede" />
+
 
 
 **6. Monthly Sales Growth by Category**
