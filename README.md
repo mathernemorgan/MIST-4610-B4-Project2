@@ -18,7 +18,7 @@ Hiya Shah (Data Wrangler), Morgan Matherne (Database Designer), Mark Monzer (Con
 
 ## **Case Summary**
 
-Northline Outfitters is a small online retail company that sells student-focused lifestyle and technology accessories, including items such as hoodies, water bottles, desk lamps, phone cases, keyboards, mouse pads, and backpacks. The company purchases products from external vendors and sells them directly to customers across the United States and Canada. Because the business is still growing, its operational data has historically been stored in Excel spreadsheets rather than in a structured database system.
+Northline Outfitters is a small online retail company that sells student-focused lifestyle and technology accessories, including items such as hoodies, water bottles, desk lamps, phone cases, keyboards, mouse pads, and backpacks. T
 
 The company provided two primary datasets: a Sales_Dump spreadsheet containing transaction-level sales data and a Product_Supplier_Master spreadsheet containing product and vendor information. These datasets reflect real-world data challenges commonly found in small and medium-sized businesses. The data was intentionally messy, unnormalized, and inconsistent, including issues such as mixed date formats, inconsistent category labels, embedded currency values, duplicate product entries, unstructured customer information, and measurements recorded in both metric and imperial units.
 
@@ -32,9 +32,9 @@ The cleaned and structured database supports important business questions for No
 
 ## Database Database Description
 
-Our database was designed to transform the two messy source spreadsheets, Sales_Dump and Product_Supplier_Master, into a compact relational model that supports data cleaning, structured storage, and the required SQL analysis. This matches the project goal of creating a conceptual model, implementing a database, and using that database to answer business questions. The assignment also emphasizes that a strong final model should remain relatively compact, with about 8 to 10 entities, and should clearly show entities, attributes, identifiers, and relationships.
+Our database was designed to transform the two messy source spreadsheets, Sales_Dump and Product_Supplier_Master, into a compact relational model that supports data cleaning, structured storage, and the required SQL analysis. 
 
-The model centers on the retail sales process for Northline Outfitters, a small online retailer that purchases products from outside vendors and sells them directly to customers in the United States and Canada. The database separates operational data into core business entities so that customer, employee, product, vendor, order, and payment information are not stored repeatedly in a single spreadsheet row. This reduces redundancy and makes the data easier to query and maintain. The design is intended to reflect the business case described in the project instructions, where sales records contain order-level and line-level information and product records contain vendor, category, and inventory-related details.
+The model centers on the retail sales process for Northline Outfitters, a small online retailer that purchases products from outside vendors and sells them directly to customers in the United States and Canada. The database separates operational data into core business entities so that customer, employee, product, vendor, order, and payment information are not stored repeatedly in a single spreadsheet row. This reduces redundancy and makes the data easier to query and maintain. T
 
 | Entity | Type | Key Attributes | Relationships |
 |---|---|---|---|
@@ -79,10 +79,10 @@ The Product_Supplier_Master dataset contained multiple data quality issues, incl
 | 4 | `payment_method` | Case inconsistency: `"visa"` / `"VISA"` (53 rows); abbreviation mismatch: `"MC"` vs `"Mastercard"` | 200 |
 | 5 | `ship_country` | `"US"` and `"USA"` used interchangeably; `"CA"` and `"Canada"` both present; 3 nulls | ~130 + 3 nulls |
 | 6 | `return_flag` | Boolean Y/N field has 40 nulls (20%) — unclear if null means `"N"` or unknown | 40 nulls |
-| 7 | `customer_info` | Multi-value field with 3 delimiters (`;`, `\|`, `/`); buries loyalty status, student flag, and country | 200 |
+| 7 | `customer_info` | Multi-value field with 3 delimiters (`;`, `\|`, `/`); buries loyalty status, student flag, and country in a single string | 200 |
 | 8 | `customer_email` | 50 nulls (25% of records) | 50 nulls |
 | 9 | `line_total` | 62 nulls (31%) — should be derivable but source columns are also inconsistently formatted | 62 nulls |
-| 10 | `order_id` | Country encoded implicitly in prefix (`UORD`=US, `CORD`=CA) — undocumented business rule | 200 |
+| 10 | `order_id` | Country encoded implicitly in prefix (`UORD` = US, `CORD` = CA) — undocumented business rule | 200 |
 
 ---
 
@@ -94,7 +94,7 @@ The Product_Supplier_Master dataset contained multiple data quality issues, incl
 | 12 | `sku` | 18 SKUs appear 2–5× as duplicate rows; some are variants, others appear to be data entry errors | 18 SKUs |
 | 13 | `category` | No controlled vocabulary: `"Tech & Student"`, `"Tech / Student"`, `"Accessories / Accessories"`, `"Student and apparels"`, comma delimiters mixed with slash | 60 |
 | 14 | `cost`, `list_price` | Some values have currency codes (`"USD 6.25"`), others are bare numbers (`31.4`) — no separate currency column | 60 |
-| 15 | `weight` | 10+ unit variants: `oz`, `ounces`, `g`, `grams`, `lb`, `lbs`, `pound`, `pounds`, `kg`, `kilograms` — no standard unit | 49 non-null |
+| 15 | `weight` | 10+ unit variants: `oz`, `ounces`, `g`, `grams`, `lb`, `lbs`, `pound`, `pounds`, `kg`, `kilograms` — no standard unit enforced | 49 non-null |
 | 16 | `length` | 18 format variants: `"10.2 in"`, `"10.2\""`, `"10.2 inches"`, `"25.4cm"`, `"26 centimetres"` — needs numeric + unit split | 47 non-null |
 | 17 | `discontinued` | Boolean Y/N field has 17 nulls (28%) — product status unknown for over a quarter of SKUs | 17 nulls |
 | 18 | `category` (cross-sheet) | Category values don't align between `Sales_Dump` and `Product_Supplier_Master` — joins will produce mismatches | Both sheets |
@@ -286,39 +286,245 @@ We had trouble finding a working SQL code to fix the Pack Size, so we just manua
 
 ## **Justification for Cleaning Steps**
 
+# Data Cleaning Process
 
+All cleaning was performed using SQL in MySQL Workbench after importing the raw data. The cleaned outputs are stored in structured datasets, with a full audit trail of transformations documented.
 
-SKU, alt_sku, and parent_sku were standardized by trimming whitespace, converting values to uppercase, and replacing blanks with NULL. This was necessary because SKU fields act as identifiers, and inconsistent formatting would create duplicate-looking products or broken parent-child relationships. The spreadsheet documentation makes clear that SKU is the internal product code and that parent_sku is used to link variants to a main product, so these fields had to be consistent for referential integrity.
+---
 
-Product descriptions were trimmed to remove unnecessary whitespace. This was a light cleanup step designed to preserve the original product names while making the text more consistent.
+## Sales_Dump Cleaning
 
-Category values were standardized into a smaller set of single, primary categories. This was necessary because the raw data included inconsistent and multi-valued entries, while the source description shows that category is supposed to represent the product’s category such as Tech, Accessories, Apparel, Lifestyle, School, or Audio. Standardizing these values improves grouping, reporting, and normalization.
+### Dates
+- Standardized to ISO format (YYYY-MM-DD)
+- CORD → DD-MM-YYYY
+- UORD → MM-DD-YYYY
+- Manual corrections applied where necessary
 
-Vendor names were cleaned to eliminate naming inconsistencies, such as singular versus plural forms of the same supplier. Since vendor information is meant to identify suppliers, inconsistent names would produce duplicate vendor records in the final design. The file description also indicates that vendor name, phone, and representative belong together as supplier information.
+### Country
+- Normalized to US / CA
+- Filled nulls using order_id prefix logic
 
-Vendor phone numbers were standardized by removing punctuation and spaces so that all values followed one consistent numeric format. This improves consistency and makes it easier to compare and validate phone values.
+### Payment Method
+- Converted to title case
+- Standardized abbreviations (MC → Mastercard)
 
-Vendor representatives were cleaned by trimming whitespace, removing extra slash-delimited notes, removing titles, and correcting typographical inconsistencies. This was necessary so that the same representative would not appear as multiple slightly different values.
+### Discounts
+- Converted all values to decimals (e.g., 10% → 0.10)
+- Extracted numeric values from text
 
-Cost and list price were cleaned by removing embedded currency text and converting the results into numeric values with two decimal places. The source spreadsheet defines these fields as monetary values, so leaving currency labels in the data would prevent proper calculations and comparisons. Standardizing them made the values usable for price, margin, and vendor analyses.
+### Tax
+- Converted to decimal format
+- Filled using order-level consistency
+- Remaining nulls left unchanged
 
-Reorder level was cleaned by converting text values such as “ten” into numeric form. This was necessary because reorder level is intended to be a minimum stock threshold, which should be stored as a number rather than text.
+### Prices / Line Totals
+- Removed currency symbols
+- Stored as numeric
+- Left null where inconsistent
 
-Pack size was standardized so that equivalent values were represented consistently. Since this field describes how products are packaged or counted for ordering, normalizing the formats improves readability and reduces duplicate categorical values.
+### Quantity
+- Extracted numeric values from text
+- Stored as integer
 
-Weight values were cleaned by removing invalid entries such as “NA,” standardizing formatting, converting all measurements into grams, and rounding to two decimal places. This step was required because the project instructions explicitly note that the source spreadsheets may contain both metric and imperial measurements. Standardizing all weights into one unit made the data comparable across products.
+### Customer Info
+- Split into first name, last name, type
+- Defaulted missing types to Standard
 
-Length values were similarly standardized by converting all measurements into centimeters and rounding to two decimal places. This was necessary because length values also appeared in mixed measurement systems and inconsistent text formats.
+### Category
+- Standardized into:
+  - Tech, Apparel, Audio, School, Accessories, Lifestyle, Desk Setup
 
-Discontinued was standardized into a consistent Y/N format. The source description identifies this column as a field indicating whether a product has been discontinued, so a consistent binary representation makes the attribute easier to query and interpret.
+### Size / Weight
+- Converted:
+  - Weight → grams
+  - Length → cm
+- Preserved "one size"
 
-Notes were lightly cleaned by trimming whitespace, but the field was retained as free text. The spreadsheet description states that notes contain extra comments such as family variant notes or seasonal notes, so the field was preserved as supplementary information rather than heavily normalized.
+### Product Descriptions
+- Converted ALL CAPS to title case
+- Corrected mismatches using reference table
 
-Redundant helper columns such as price_currency, price_numeric, weight_value, weight_unit, weight_kg, length_value, length_unit, and length_cm were removed because they were either empty, incomplete, duplicated other information, or became unnecessary after standardization. Removing them reduced redundancy and made the final table simpler and more consistent.
+### Emails
+- Fixed malformed entries
+- Filled using composite key where unique
+- Remaining nulls left unchanged
 
-Parent SKU validation was performed to confirm that every non-null parent_sku matched an existing sku. This step ensured that product family relationships remained valid after the identifier cleanup and supported the final normalized product design.
+### Return Flag
+- Filled nulls with "N"
 
-Overall, these cleaning steps transformed Product_Supplier_Master from a messy spreadsheet export into a structured dataset suitable for loading into normalized entities such as Product, Vendor, and Category. This directly supports the project requirement to identify major data quality issues, explain how they were resolved, and include SQL statements used to standardize, split, convert, or update the imported data.
+---
+
+## Product_Supplier_Master Cleaning
+
+### Category
+- Standardized into 7 categories
+
+### Cost / List Price
+- Removed currency prefixes
+- Converted to numeric
+
+### Weight / Length
+- Converted to:
+  - weight_g
+  - length_cm
+
+### Duplicates
+- Removed exact duplicates
+- Preserved SKU variants
+
+### Null Fields
+- Filled using deterministic logic
+- Logged all updates
+
+### Reorder Level
+- Converted text values to numeric
+- Corrected inconsistencies
+
+### Parent SKU
+- Filled for variants
+- Linked to base product
+
+### Vendor Data
+- Standardized names and phone numbers
+- Split representative names into components
+
+### Pack Size
+- Standardized formatting (e.g., "1 each")
+  
+
+### Identifier Standardization (SKU Integrity)
+- Trimmed whitespace and standardized all SKU, alt_sku, and parent_sku values
+- Converted all identifiers to uppercase
+- Replaced blanks with NULL
+- Validated that all parent_sku values exist in sku to preserve referential integrity
+
+### Vendor Data Standardization
+- Removed inconsistencies in vendor naming (singular vs plural)
+- Standardized phone numbers to numeric format
+- Cleaned representative names (removed titles, extra notes, corrected typos)
+
+### Removed Redundant Columns
+- Dropped helper columns (price_currency, weight_unit, length_unit, etc.)
+- Reduced redundancy and improved normalization
+
+### Discontinued Flag
+- Standardized to Y/N format for consistency
+
+### Notes Field
+- Preserved as free text
+- Trimmed whitespace but avoided heavy transformation to retain meaning
+
+### Data Integrity Validation
+- Confirmed all parent-child SKU relationships are valid
+- Ensured cleaned dataset aligns with normalized database structure
+
+## Final Outcome
+The dataset was transformed from an inconsistent spreadsheet into a structured, analysis-ready dataset. Cleaning steps ensured consistency, reduced redundancy, and enforced referential integrity, supporting downstream normalization into relational tables such as Product, Vendor, and Category.
+
+# Data Cleaning Process
+
+All cleaning was performed using SQL in MySQL Workbench after importing the raw data. The cleaned outputs are stored in structured datasets, with a full audit trail of transformations documented.
+
+---
+
+## Sales_Dump Cleaning
+
+### Dates
+- Standardized to ISO format (YYYY-MM-DD)
+- CORD → DD-MM-YYYY
+- UORD → MM-DD-YYYY
+- Manual corrections applied where necessary
+
+### Country
+- Normalized to US / CA
+- Filled nulls using order_id prefix logic
+
+### Payment Method
+- Converted to title case
+- Standardized abbreviations (MC → Mastercard)
+
+### Discounts
+- Converted all values to decimals (e.g., 10% → 0.10)
+- Extracted numeric values from text
+
+### Tax
+- Converted to decimal format
+- Filled using order-level consistency
+- Remaining nulls left unchanged
+
+### Prices / Line Totals
+- Removed currency symbols
+- Stored as numeric
+- Left null where inconsistent
+
+### Quantity
+- Extracted numeric values from text
+- Stored as integer
+
+### Customer Info
+- Split into first name, last name, type
+- Defaulted missing types to Standard
+
+### Category
+- Standardized into:
+  - Tech, Apparel, Audio, School, Accessories, Lifestyle, Desk Setup
+
+### Size / Weight
+- Converted:
+  - Weight → grams
+  - Length → cm
+- Preserved "one size"
+
+### Product Descriptions
+- Converted ALL CAPS to title case
+- Corrected mismatches using reference table
+
+### Emails
+- Fixed malformed entries
+- Filled using composite key where unique
+- Remaining nulls left unchanged
+
+### Return Flag
+- Filled nulls with "N"
+
+---
+
+## Product_Supplier_Master Cleaning
+
+### Category
+- Standardized into 7 categories
+
+### Cost / List Price
+- Removed currency prefixes
+- Converted to numeric
+
+### Weight / Length
+- Converted to:
+  - weight_g
+  - length_cm
+
+### Duplicates
+- Removed exact duplicates
+- Preserved SKU variants
+
+### Null Fields
+- Filled using deterministic logic
+- Logged all updates
+
+### Reorder Level
+- Converted text values to numeric
+- Corrected inconsistencies
+
+### Parent SKU
+- Filled for variants
+- Linked to base product
+
+### Vendor Data
+- Standardized names and phone numbers
+- Split representative names into components
+
+### Pack Size
+- Standardized formatting (e.g., "1 each")
 
 
 ## **Data Cleaning Process: Sales_Dump**
@@ -412,6 +618,8 @@ FROM Sales_Dump
 GROUP BY ship_country, sku, product_description
 ORDER BY ship_country, total_revenue DESC;
 ```
+<img width="1470" height="719" alt="image" src="https://github.com/user-attachments/assets/b0c670c5-d391-4bfc-9267-ac41d46cdcd0" />
+
 
 
 **2. ‎Employee Performance vs. Managerial Peer Average**
@@ -424,6 +632,8 @@ FROM Sales_Dump
 GROUP BY employee_ref, manager_ref
 ORDER BY order_count DESC;
 ```
+<img width="1444" height="689" alt="image" src="https://github.com/user-attachments/assets/dff4b031-a3a6-4740-91d6-4a88927fa467" />
+
 
 
 **3. Multi-Category Vendors**
@@ -435,6 +645,9 @@ FROM Product_Supplier_Master
 GROUP BY vendor_name
 HAVING COUNT(DISTINCT category) > 1;
 ```
+
+<img width="1430" height="574" alt="image" src="https://github.com/user-attachments/assets/2570f1fc-c862-4157-81e7-569e8c92c14b" />
+
 
 
 **4. Student Demographic Sales Impact**
