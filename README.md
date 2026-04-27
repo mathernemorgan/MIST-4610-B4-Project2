@@ -120,8 +120,8 @@ We imported the two sheets into MySQL and used the following queries to clean th
 ## SQL Code used to clean Sales_Dump 
 
 SQL
-```sql
-UPDATE Sales_Dump
+```
+1. UPDATE Sales_Dump
 SET sale_date = CASE 
     WHEN sale_date LIKE '%-%' THEN STR_TO_DATE(sale_date, '%m-%d-%Y')
     WHEN sale_date LIKE '%Oct%' THEN '2025-10-17' -- Handled unique natural language cases
@@ -131,7 +131,6 @@ END;
 Issue: The customer_info column contained three distinct data points—Name, Type, and Loyalty status—concatenated into a single string.
 Solution: Employed SUBSTRING_INDEX and TRIM to split the string into atomic columns, following the principle of Database Normalization.
 
-SQL
 -- Extracting Name
 UPDATE Sales_Dump SET customer_name = TRIM(SUBSTRING_INDEX(customer_info, ',', 1));
 
@@ -141,11 +140,11 @@ SET is_loyalty_member = CASE
     WHEN customer_info LIKE '%Member%' THEN 1 
     ELSE 0 
 END;
+
 3. Geographic & Null Remediation
 Issue: Missing data in shipping columns and placeholder text like "Same as billing" rendered regional reports inaccurate.
 Solution: Used UPDATE statements to map billing data to shipping fields where necessary and parsed combined city/region strings.
 
-SQL
 UPDATE Sales_Dump 
 SET ship_city = TRIM(SUBSTRING_INDEX(location_string, ',', 1)),
     ship_region = TRIM(SUBSTRING_INDEX(location_string, ',', -1))
@@ -154,47 +153,48 @@ WHERE location_string IS NOT NULL;
 Issue: Unit prices and totals included currency symbols ($, %) and were stored as text, which blocked mathematical operations like SUM() and AVG().
 Solution: Stripped non-numeric symbols using REPLACE and cast the remaining strings to the DECIMAL data type.
 
-SQL
-UPDATE Sales_Dump 
+
+5. UPDATE Sales_Dump 
 SET unit_price = CAST(REPLACE(unit_price, '$', '') AS DECIMAL(10,2)),
     line_total = CAST(REPLACE(line_total, '$', '') AS DECIMAL(10,2));
-5. Referential Consistency (Normalization)
+
+6. Referential Consistency (Normalization)
 Issue: Inconsistent casing (e.g., "visa" vs. "VISA" or "sku-1" vs. "SKU-1") would cause foreign key constraint violations.
 Solution: Applied UPPER and TRIM to all primary and foreign key columns to ensure perfect matching during table joins.
 
-SQL
-UPDATE Sales_Dump 
+7. UPDATE Sales_Dump 
 SET sku = UPPER(TRIM(sku)),
     payment_method = UPPER(TRIM(payment_method));
-6. Feature Engineering (Boolean Flags)
+
+8. Feature Engineering (Boolean Flags)
 Issue: Operational insights (e.g., late shipments or gift orders) were buried in unstructured text within the notes column.
 Solution: Created new Boolean columns and used the LIKE operator to extract specific flags for advanced business intelligence.
 
-SQL
+9. 
 -- Identifying Late Shipments
 UPDATE Sales_Dump 
 SET is_late_ship = 1 
 WHERE notes LIKE '%late%';
 
--- Flagging Manual Discounts for Audit
+10. -- Flagging Manual Discounts for Audit
 UPDATE Sales_Dump 
 SET is_manual_discount = 1 
 WHERE notes LIKE '%promo%' OR notes LIKE '%discount%';
-7. Handling "Orphan" Records
+
+11. Handling "Orphan" Records
 Issue: Sales records with missing customer emails or non-existent SKUs would fail to import into a strict relational schema.
 Solution: Identified these records and mapped them to a pre-defined "Unknown" placeholder in the parent tables to preserve transaction volume while maintaining integrity.
-```
 
-SQL
--- Redirecting missing links to a Guest placeholder
+12. -- Redirecting missing links to a Guest placeholder
 INSERT INTO Orders (customer_id, ...)
 SELECT IFNULL(c.customer_id, 9999), ...
 FROM Sales_Dump s
 LEFT JOIN Customers c ON s.customer_email = c.email;
 Summary: Through these programmatic updates, the dataset was transformed from a low-integrity "flat" format into a clean, normalized structure ready for complex SQL joins and multi-dimensional reporting.
+```
 
 ## SQL codes to clean the Product_Supplier_Master table
-```sql
+```
 -- SKU-related cleanup
 UPDATE Product_Supplier_Master
 SET sku = NULLIF(UPPER(TRIM(sku)), '');
