@@ -2,14 +2,19 @@
 Group B4 
 
 ## Table of Contents
-
 1. [Team Members / Roles](#team-members--roles)
 2. [Case Summary](#case-summary)
 3. [Conceptual Model / Database Description](#conceptual-model--database-description)
 4. [Data Model](#data-model)
-5. [Data Cleaning Process: Product_Supplier_Master](#data-cleaning-process-product_supplier_master)
-6. [Data Cleaning Process: Sales_Dump](#data-cleaning-process-sales_dump)
-7. [Queries](#queries)
+5. [Database Description](#database-database-description)
+6. [Data Cleaning Process: Product_Supplier_Master](#data-cleaning-process-product_supplier_master)
+7. [Data Cleaning Process: Sales_Dump](#issues-identified)
+8. [SQL Code: Sales_Dump Cleaning](#sql-code-used-to-clean-sales_dump)
+9. [SQL Code: Product_Supplier_Master Cleaning](#sql-codes-to-clean-the-product_supplier_master-table)
+10. [Manual Edits](#manually-edit)
+11. [Justification for Cleaning Steps](#justification-for-cleaning-steps)
+12. [Final Outcome](#final-outcome)
+13. [Queries](#queries)
 
 ## **Team Members / Roles**
 
