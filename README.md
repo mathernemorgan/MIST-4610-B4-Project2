@@ -67,7 +67,7 @@ Customer and employee data were separated into Customer and Employees tables to 
 The Product_Supplier_Master dataset contained multiple data quality issues, including inconsistent identifiers, mixed text and numeric formats, embedded currency labels, inconsistent units of measure, redundant helper columns, and unstructured notes. These issues were cleaned using SQL so the data could be standardized and loaded into the final relational model. The source spreadsheet included product, vendor, pricing, packaging, measurement, discontinuation, and parent SKU fields, so the cleaning process focused on making each of those attributes consistent and usable in the database.
 
 ## Issues Identified
-## Sheet 1: `Sales_Dump` — 200 rows × 21 columns
+## `Sales_Dump`
 
 | # | Column(s) | Issue | Rows Affected |
 |---|-----------|-------|---------------|
@@ -84,7 +84,7 @@ The Product_Supplier_Master dataset contained multiple data quality issues, incl
 
 ---
 
-## Sheet 2: `Product_Supplier_Master` — 60 rows × 16 columns
+## `Product_Supplier_Master`
 
 | # | Column(s) | Issue | Rows Affected |
 |---|-----------|-------|---------------|
@@ -417,9 +417,6 @@ We had trouble finding a working SQL code to fix the Pack Size, so we just manua
 - Filled using composite key where unique
 - Remaining nulls left unchanged
 
-### Return Flag
-- Filled nulls with "N"
-
 ---
 
 ## Product_Supplier_Master Cleaning
@@ -440,10 +437,6 @@ We had trouble finding a working SQL code to fix the Pack Size, so we just manua
 - Removed exact duplicates
 - Preserved SKU variants
 
-### Null Fields
-- Filled using deterministic logic
-- Logged all updates
-
 ### Reorder Level
 - Converted text values to numeric
 - Corrected inconsistencies
@@ -457,9 +450,8 @@ We had trouble finding a working SQL code to fix the Pack Size, so we just manua
 - Split representative names into components
 
 ### Pack Size
-- Standardized formatting (e.g., "1 each")
+- Standardized formatting
   
-
 ### Identifier Standardization (SKU Integrity)
 - Trimmed whitespace and standardized all SKU, alt_sku, and parent_sku values
 - Converted all identifiers to uppercase
