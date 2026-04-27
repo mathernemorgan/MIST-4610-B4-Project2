@@ -399,12 +399,20 @@ WHERE p.parent_sku IS NOT NULL
 Natural Language Question: Which products generated the highest total sales revenue, by country?
 
 ```sql
-SELECT ship_country, sku, product_description, SUM(line_total) AS total_revenue
-FROM Sales_Dump
-GROUP BY ship_country, sku, product_description
-ORDER BY ship_country, total_revenue DESC;
+SELECT 
+    o.ship_country,
+    p.product_description,
+    p.sku,
+    SUM(ol.line_total) AS total_revenue
+FROM order_line ol
+JOIN orders o  ON ol.order_id = o.order_id
+JOIN product p ON ol.sku = p.sku
+GROUP BY o.ship_country, p.sku, p.product_description
+ORDER BY o.ship_country, total_revenue DESC;
 ```
-<img width="1470" height="719" alt="image" src="https://github.com/user-attachments/assets/b0c670c5-d391-4bfc-9267-ac41d46cdcd0" />
+<img width="1432" height="721" alt="image" src="https://github.com/user-attachments/assets/4dd1f962-831b-4f8e-99cd-4d0f028c05f1" />
+
+
 
 
 
@@ -412,27 +420,39 @@ ORDER BY ship_country, total_revenue DESC;
 Natural Language Question: Which employees handled the largest number of orders, and how do their results compare with other employees under the same manager?
 
 ```sql
-SELECT employee_ref, manager_ref, COUNT(DISTINCT order_id) AS order_count,
-       AVG(COUNT(DISTINCT order_id)) OVER (PARTITION BY manager_ref) AS peer_avg_orders
-FROM Sales_Dump
-GROUP BY employee_ref, manager_ref
-ORDER BY order_count DESC;
+SELECT 
+    e.employee_id,
+    e.manager_id,
+    COUNT(o.order_id)                          AS orders_handled,
+    ROUND(AVG(COUNT(o.order_id)) OVER (
+        PARTITION BY e.manager_id
+    ), 2)                                       AS manager_team_avg,
+    COUNT(o.order_id) - ROUND(AVG(COUNT(o.order_id)) OVER (
+        PARTITION BY e.manager_id
+    ), 2)                                       AS vs_team_avg
+FROM employee e
+JOIN orders o ON e.employee_id = o.Employee_employee_id
+GROUP BY e.employee_id, e.manager_id
+ORDER BY e.manager_id, orders_handled DESC;
 ```
-<img width="1444" height="689" alt="image" src="https://github.com/user-attachments/assets/dff4b031-a3a6-4740-91d6-4a88927fa467" />
-
+<img width="1414" height="634" alt="image" src="https://github.com/user-attachments/assets/48f3abfc-f8d0-480b-b9f7-adc89476432c" />
 
 
 **3. Multi-Category Vendors**
 Natural Language Question: Which vendors supply products that appear in more than one category?
 
 ```sql
-SELECT vendor_name, COUNT(DISTINCT category) AS category_count
-FROM Product_Supplier_Master
-GROUP BY vendor_name
-HAVING COUNT(DISTINCT category) > 1;
+SELECT 
+    pv.vendor_name,
+    COUNT(DISTINCT p.category_name)  AS num_categories,
+    GROUP_CONCAT(DISTINCT p.category_name ORDER BY p.category_name) AS categories_supplied
+FROM product_vendor pv
+JOIN product p ON pv.sku = p.sku
+GROUP BY pv.vendor_name
+HAVING COUNT(DISTINCT p.category_name) > 1
+ORDER BY num_categories DESC;
 ```
-
-<img width="1430" height="574" alt="image" src="https://github.com/user-attachments/assets/2570f1fc-c862-4157-81e7-569e8c92c14b" />
+<img width="1427" height="475" alt="image" src="https://github.com/user-attachments/assets/1baeb897-0415-4332-9160-09707e8532dc" />
 
 
 
@@ -441,12 +461,20 @@ Natural Language Question: What is the total revenue and average line total for 
 Business Justification: Since Northline focuses on student-friendly gear, this query quantifies the actual financial impact of the student demographic. If the average spend is lower than guests, management might implement "Student Bundle" deals to increase order value.
 
 ```sql
-SELECT COUNT(line_id) AS total_student_lines, 
-       SUM(line_total) AS total_student_revenue,
-       AVG(line_total) AS avg_student_line_value
-FROM Sales_Dump
-WHERE customer_info LIKE '%Student%';
+SELECT 
+    c.customer_type,
+    COUNT(ol.line_id)            AS total_orders,
+    SUM(ol.line_total)           AS total_revenue,
+    ROUND(AVG(ol.line_total), 2) AS avg_line_total,
+    SUM(ol.quantity)             AS total_units_sold
+FROM order_line ol
+JOIN orders o   ON ol.order_id = o.order_id
+JOIN customer c ON o.customer_first_name = c.customer_first_name
+               AND o.customer_last_name = c.customer_last_name
+GROUP BY c.customer_type
+ORDER BY total_revenue DESC;
 ```
+<img width="1427" height="429" alt="image" src="https://github.com/user-attachments/assets/54f18ffe-6cbe-413f-8186-d0cd5b84296a" />
 
 
 
@@ -455,15 +483,24 @@ Natural Language Question: Which products have a return rate higher than 10% and
 Business Justification: High return rates usually signal quality issues or misleading descriptions. By identifying these "High-Risk" items, the data wrangler can pinpoint specific vendors or products that are causing high processing costs and lost margins.
 
 ```sql
-SELECT sku, product_description,
-       (COUNT(CASE WHEN return_flag = 'Y' THEN 1 END) / COUNT(*)) * 100 AS return_rate,
-       SUM(CASE WHEN return_flag = 'Y' THEN line_total ELSE 0 END) AS revenue_lost
-FROM Sales_Dump
-GROUP BY sku, product_description
-HAVING return_rate > 10
-ORDER BY revenue_lost DESC;
+SELECT 
+    p.sku,
+    p.product_description,
+    p.category_name,
+    pv.vendor_name,
+    COUNT(ol.line_id)                                    AS total_orders,
+    SUM(ol.is_returned)                                  AS total_returns,
+    ROUND(SUM(ol.is_returned) / COUNT(ol.line_id) * 100, 2) AS return_rate_pct,
+    ROUND(SUM(CASE WHEN ol.is_returned = 1 
+              THEN ol.line_total ELSE 0 END), 2)         AS revenue_lost
+FROM order_line ol
+JOIN product p        ON ol.sku = p.sku
+JOIN product_vendor pv ON p.sku = pv.sku
+GROUP BY p.sku, p.product_description, p.category_name, pv.vendor_name
+HAVING ROUND(SUM(ol.is_returned) / COUNT(ol.line_id) * 100, 2) > 10
+ORDER BY return_rate_pct DESC, revenue_lost DESC;
 ```
-<img width="1435" height="724" alt="image" src="https://github.com/user-attachments/assets/32361390-7ed5-4cec-8c71-15c1faf27ede" />
+<img width="1432" height="714" alt="image" src="https://github.com/user-attachments/assets/ab0fb282-92f3-44db-8a01-56be0237b268" />
 
 
 
@@ -472,15 +509,21 @@ Natural Language Question: What is the average discount given per category in th
 Business Justification: This identifies if one region is receiving significantly more discounts to move inventory. If Canadian orders have higher discounts, it may indicate a need to adjust base pricing in that country to maintain a healthy profit margin.
 
 ```sql
-SELECT ship_country, category, 
-       AVG(CASE 
-           WHEN discount LIKE '%%' THEN CAST(REPLACE(discount, '%', '') AS DECIMAL) / 100 
-           ELSE CAST(discount AS DECIMAL) 
-       END) AS avg_discount_value
-FROM Sales_Dump
-GROUP BY ship_country, category
-ORDER BY ship_country, avg_discount_value DESC;
+SELECT
+    p.category_name,
+    o.ship_country,
+    COUNT(ol.line_id)                        AS total_orders,
+    ROUND(AVG(ol.discount_amount) * 100, 2)  AS avg_discount_pct,
+    ROUND(SUM(ol.line_total), 2)             AS total_revenue,
+    ROUND(AVG(ol.line_total), 2)             AS avg_order_value
+FROM order_line ol
+JOIN orders o  ON ol.order_id = o.order_id
+JOIN product p ON ol.sku = p.sku
+WHERE o.ship_country IN ('US', 'CA')
+GROUP BY p.category_name, o.ship_country
+ORDER BY p.category_name, o.ship_country;
 ```
-<img width="1472" height="685" alt="image" src="https://github.com/user-attachments/assets/c8fe5c0c-81cd-4175-87f7-25e133482a8e" />
+<img width="1419" height="674" alt="image" src="https://github.com/user-attachments/assets/27a2e3c6-2876-4576-814f-9850cfb926eb" />
+
 
     
