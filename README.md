@@ -31,7 +31,7 @@ The cleaned and structured database supports important business questions for No
 
 ## **Conceptual Model / Database Description**
 ## Data Model
-![Project Image](mistproject2.png)
+![Project Image](datamodelproject2.png)
 
 ## Database Database Description
 
