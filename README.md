@@ -17,12 +17,12 @@ Group B4
 
 ## **Team Members / Roles**
 
-Hiya Shah (Data Wrangler), Morgan Matherne (Database Designer), Mark Monzer (Conceptual Modeler), Roshan Gadiraju (SQL Writer), Zeynep Koseoglu (Group Leader)
+Zeynep Koseoglu (Database Designer & Data Wrangler), Morgan Matherne (Conceptual Modeler & Group Leader), Roshan Gadiraju (SQL Writer), Hiya Shah (Data Wrangler)
 
 
 ## **Case Summary**
 
-Northline Outfitters is a small online retail company that sells student-focused lifestyle and technology accessories, including items such as hoodies, water bottles, desk lamps, phone cases, keyboards, mouse pads, and backpacks. The company's data challenges are not just technical issues, they directly impact the company’s ability to operate and grow effectively. Because the Sales_Dump and Product_Supplier_Master datasets are messy, unstandardized, and inconsistent, the business struggles to generate reliable insights from its own data.
+Northline Outfitters is a small online retail company that sells student-focused lifestyle and technology accessories, including items such as hoodies, water bottles, desk lamps, phone cases, keyboards, mouse pads, and backpacks. The company's data challenges are not just technical issues; they directly impact the company’s ability to operate and grow effectively. Because the Sales_Dump and Product_Supplier_Master datasets are messy, unstandardized, and inconsistent, the business struggles to generate reliable insights from its own data.
 
 For example, inconsistent product names and duplicate entries make it difficult to accurately track inventory and sales performance, which can lead to overstocking or stockouts. Mixed date formats and unstructured transaction data limit the company’s ability to analyze trends over time, hurting forecasting and seasonal planning. Embedded currency values and inconsistent units (metric vs. imperial) introduce calculation errors, leading to inaccurate revenue reporting and flawed financial decisions.
 
@@ -49,7 +49,6 @@ The model centers on the retail sales process for Northline Outfitters, a small 
 | **product_vendor** | Bridge | sku (FK), vendor_id (FK), cost | Connects Products to Vendors; stores vendor-specific cost |
 | **Customer** | Reference | customer_id (PK), name, email, customer_type, notes, loyalty_info | Places many Orders |
 | **Employees** | Reference | employee_id (PK), manager_id (FK self-ref) | Handles many Orders; manager_id supports hierarchical reporting |
-| **PaymentMethods** | Lookup | payment_method_id (PK), payment_type | Used by many Orders |
 
 
 The model separates transactional data into Orders and OrderLines. Orders store order-level details (date, customer, employee, payment, location), while OrderLines store product-level details (SKU, quantity, price, discount, tax, returns). This prevents repeating groups and supports accurate sales and revenue analysis.
@@ -66,11 +65,11 @@ Customer and employee data were separated into Customer and Employees tables to 
 | # | Column               | What's Wrong |
 |---|----------------------|--------------|
 | 1 | `line_id`            | No issues |
-| 2 | `order_id`           | Nobody explained what `UORD-` vs `CORD-` means; some rows are missing a country |
+| 2 | `order_id`           | No issues |
 | 3 | `sale_date`          | Dates are written 7+ different ways; one date is in the future; some dates are impossible to tell if they're MM/DD or DD/MM |
-| 4 | `employee_ref`       | Nobody explained what `EMU-` vs `EMC-` means |
-| 5 | `manager_ref`        | Nobody explained what `EMU-M` vs `EMC-M` means |
-| 6 | `customer_info`      | Three different punctuation styles used to separate info; loyalty status, student status, and guest/member status are all crammed into one cell |
+| 4 | `employee_ref`       | No issues |
+| 5 | `manager_ref`        | No issues |
+| 6 | `customer_info`      | Three different punctuation styles used to separate info; loyalty status, student status, and guest/member status are all crammed into one cell. Not normalized.|
 | 7 | `customer_email`     | Lots of empty cells; some emails are broken (wrong ending); the same customer shows up with different email addresses |
 | 8 | `payment_method`     | Same payment type written in different ways (e.g., `VISA`, `visa`, `Visa`); `MC` used sometimes instead of `Mastercard` |
 | 9 | `sku`                | Some product codes are uppercase, some are lowercase — even for the same product |
